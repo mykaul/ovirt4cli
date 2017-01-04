@@ -1,5 +1,5 @@
 """"
-Implements the OVIRTcli root UI.
+Implements the oVirt4cli root UI.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain
@@ -24,7 +24,6 @@ import ovirtsdk4 as sdk
 
 from configshell_fb import ExecutionError
 
-from .ui_ovirtcli import complete_path
 from .ui_node import UINode
 
 from .ui_ovirtcli import UIData_centers, UIClusters, UIStorage_domains, UITemplates, UIVMs, UIHosts
@@ -32,16 +31,30 @@ from .ui_ovirtcli import UIData_centers, UIClusters, UIStorage_domains, UITempla
 default_save_file = "~/ovirtlcli.json"
 kept_backups = 10
 
+def complete_path(path, stat_fn):
+    filtered = []
+    for entry in glob.glob(path + '*'):
+        st = os.stat(entry)
+        if stat.S_ISDIR(st.st_mode):
+            filtered.append(entry + '/')
+        elif stat_fn(st.st_mode):
+            filtered.append(entry)
+
+    # Put directories at the end
+    return sorted(filtered,
+                  key=lambda s: '~'+s if s.endswith('/') else s)
+
 
 class UIRoot(UINode):
     """
-    The ovirtcli hierarchy root node.
+    The ovirt4cli hierarchy root node.
     """
 
     def __init__(self, shell, as_admin=True):
         UINode.__init__(self, '/', shell=shell)
         self.as_admin = as_admin
         self._api = None
+        self._ip = None
 
     def refresh(self):
         """
@@ -51,11 +64,18 @@ class UIRoot(UINode):
 
         if self._api is not None:
             UIData_centers(self, self._api)
-            UIClusters(self, self._api)
+            # FIXME
+            # UIClusters(self, self._api)
             UIHosts(self, self._api)
             UIStorage_domains(self, self._api)
             UITemplates(self, self._api)
             UIVMs(self, self._api)
+
+    def summary(self):
+        if self._api is None:
+            return "Disconnected", None
+        info = self._api.system_service().get()
+        return "Engine %s: %s" % (self._ip, info.product_info.version.full_version), None
 
     def ui_command_connect(self, username, password, ip):
         """
@@ -86,6 +106,7 @@ class UIRoot(UINode):
 
         if not self._api.test(raise_exception=False):
             self.shell.log.info("Failed to test connection to oVirt Engine.")
+            self._api = None
         else:
             self.shell.log.info("Connected to oVirt Engine.")
             self._ip = ip

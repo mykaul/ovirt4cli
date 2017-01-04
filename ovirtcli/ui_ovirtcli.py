@@ -1,9 +1,6 @@
 '''
 Implements the targetcli backstores related UI.
 
-This file is part of targetcli.
-Copyright (c) 2011-2013 by Datera, Inc
-
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain
 a copy of the License at
@@ -106,8 +103,9 @@ class UIData_centers(UINode):
     def refresh(self):
         self._children = set([])
         dcs = self._dcs_service.list()
-        for dc in dcs:
-            UIData_center(self, dc, dc.name)
+        if dcs is not None:
+            for dc in dcs:
+                UIData_center(self, dc, dc.name)
 
     def summary(self):
         dcs = self._dcs_service.list()
@@ -168,8 +166,9 @@ class UIClusters(UINode):
     def refresh(self):
         self._children = set([])
         clusters = self._clusters_service.list()
-        for cluster in clusters:
-            UICluster(self, cluster, cluster.name)
+        if clusters is not None:
+            for cluster in clusters:
+                UICluster(self, cluster, cluster.name)
 
     def summary(self):
         clusters = self._clusters_service.list()
@@ -205,8 +204,9 @@ class UIStorage_domains(UINode):
     def refresh(self):
         self._children = set([])
         sds = self._sds_service.list()
-        for sd in sds:
-            UIStorage_domain(self, sd, sd.name)
+        if sds is not None:
+            for sd in sds:
+                UIStorage_domain(self, sd, sd.name)
 
     def summary(self):
         sds = self._sds_service.list()
@@ -227,7 +227,7 @@ class UIStorage_domain(UINode):
         self._children = set([])
 
     def summary(self):
-        return '%s domain [%s]' % (self._sd.type, self._sd.status), None
+        return 'type: %s, status: %s' % (self._sd.type, self._sd.status), None
 
 
 class UIHosts(UINode):
@@ -242,11 +242,14 @@ class UIHosts(UINode):
     def refresh(self):
         self._children = set([])
         hosts = self._hosts_service.list()
-        for host in hosts:
-            UIHost(self, host, host.name)
+        if hosts is not None:
+            for host in hosts:
+                UIHost(self, host, host.name)
 
     def summary(self):
         hosts = self._hosts_service.list()
+        if hosts is None:
+            return 'no hosts', None
         up = 0
         for host in hosts:
             if host.status == types.HostStatus.UP:
@@ -347,12 +350,12 @@ class UIHost(UINode):
     def summary(self):
         status = self._host.status
         if status == types.HostStatus.UP:
-            state = 'UP'
+            state = ' [UP]'
         elif status == types.HostStatus.MAINTENANCE:
-            state = 'Maint.'
+            state = ' [Maint.]'
         else:
             state = ''
-        return 'Address: %s [%s]' % (self._host.address, state), None
+        return 'Address: %s%s' % (self._host.address, state), None
 
     def ui_command_deactivate(self):
         self._parent.ui_command_deactivate(self._host.name)

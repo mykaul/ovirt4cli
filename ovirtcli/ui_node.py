@@ -1,8 +1,5 @@
 '''
-Implements the targetcli base UI node.
-
-This file is part of targetcli.
-Copyright (c) 2011-2013 by Datera, Inc
+Implements the ovirt4cli base UI node.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain
@@ -17,8 +14,6 @@ License for the specific language governing permissions and limitations
 under the License.
 '''
 
-import six
-
 from configshell_fb import ConfigNode, ExecutionError
 
 class UINode(ConfigNode):
@@ -27,9 +22,6 @@ class UINode(ConfigNode):
     '''
     def __init__(self, name, parent=None, shell=None):
         ConfigNode.__init__(self, name, parent, shell)
-        self.define_config_group_param(
-            'global', 'auto_activate', 'bool',
-            'If true, automatically activate objects upon creation.')
         self.define_config_group_param(
             'global', 'auto_cd_after_create', 'bool',
             'If true, changes current path to newly created objects.')
