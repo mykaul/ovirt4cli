@@ -1,5 +1,5 @@
-'''
-Implements the targetcli backstores related UI.
+""""
+Implements the ovirt4cli related UI.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations
 under the License.
-'''
+"""
 
 import glob
 import os
@@ -112,7 +112,7 @@ class UIData_centers(UINode):
         return 'Data Centers: %d' % len(dcs), None
 
     def ui_command_create(self, name, description=None, local=False):
-        dc = self._dcs_service.add(
+        self._dcs_service.add(
             types.DataCenter(
                 name=name,
                 description=description if description is not None else '',
@@ -122,9 +122,9 @@ class UIData_centers(UINode):
         self.refresh()
 
     def ui_command_delete(self, name):
-        filter = 'name=%s' % name
+        search_query = 'name=%s' % name
         try:
-            dc = self._dcs_service.list(search=filter)[0]
+            dc = self._dcs_service.list(search=search_query)[0]
         except:
             self.shell.log.info('Data center %s not found. Check spelling' % name)
             return
@@ -132,6 +132,21 @@ class UIData_centers(UINode):
         dc_service = self._dcs_service.data_center_service(dc.id)
         dc_service.remove()
         self.refresh()
+
+    def ui_command_rename(self, name, new_name):
+        search_query = 'name=%s' % name
+        try:
+            dc = self._dcs_service.list(search=search_query)[0]
+        except:
+            self.shell.log.info('Data center %s not found. Check spelling' % name)
+            return
+
+        dc_service = self._dcs_service.data_center_service(dc.id)
+        dc_service.update(
+            types.DataCenter(
+                 name=new_name,
+            ),
+        )
 
 
 class UIData_center(UINode):
@@ -250,12 +265,11 @@ class UIHosts(UINode):
         hosts = self._hosts_service.list()
         if hosts is None:
             return 'no hosts', None
-        up = 0
+        hosts_up = 0
         for host in hosts:
             if host.status == types.HostStatus.UP:
-                up += 1
-        return '%d hosts (%d UP)' % (len(hosts), up), None
-
+                hosts_up += 1
+        return '%d hosts (%d UP)' % (len(hosts), hosts_up), None
 
     def ui_command_create(self, name, address, password, cluster, description=None):
         host = self._hosts_service.add(
@@ -273,13 +287,13 @@ class UIHosts(UINode):
         host_service = self._hosts_service.host_service(host.id)
         start_time = time.time()
         timeout = 15 * 60
-        elpased = False
+        elapsed = False
         while not elapsed:
             time.sleep(5)
             host = host_service.get()
             if host.status == types.HostStatus.UP or host.status == types.HostStatus.NonOperational:
                 break
-            if (time.time() - self.start_time) > timeout:
+            if (time.time() - start_time) > timeout:
                 elapsed = True
                 break
 
@@ -292,9 +306,9 @@ class UIHosts(UINode):
             self.shell.log.info("Host was not added properly. Status: %s" % host.status)
 
     def ui_command_delete(self, name):
-        filter = 'name=%s' % name
+        search_query = 'name=%s' % name
         try:
-            host = self._hosts_service.list(search=filter)[0]
+            host = self._hosts_service.list(search=search_query)[0]
         except:
             self.shell.log.info('Host %s not found. Check spelling.' % name)
             return
@@ -308,9 +322,9 @@ class UIHosts(UINode):
         self.refresh()
 
     def ui_command_deactivate(self, name):
-        filter = 'name=%s' % name
+        search_query = 'name=%s' % name
         try:
-            host = self._hosts_service.list(search=filter)[0]
+            host = self._hosts_service.list(search=search_query)[0]
         except:
             self.shell.log.info('Host %s not found. Check spelling' % name)
             return
@@ -321,9 +335,9 @@ class UIHosts(UINode):
             self.refresh()
 
     def ui_command_activate(self, name):
-        filter = 'name=%s' % name
+        search_query = 'name=%s' % name
         try:
-            host = self._hosts_service.list(search=filter)[0]
+            host = self._hosts_service.list(search=search_query)[0]
         except:
             self.shell.log.info('Host %s not found. Check spelling' % name)
             return
@@ -401,6 +415,7 @@ class UIVM(UINode):
 
     def summary(self):
         return '%s:%s' % (self._vm.name, self._vm.id), None
+
 
 class UITemplates(UINode):
     """
